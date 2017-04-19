@@ -1,7 +1,7 @@
 #include "csc.h"
 
 //#include "omp.h"
-//#include <mpi.h>
+#include <mpi.h>
 #include <cstddef>
 #include <climits>
 #include <cfloat>
@@ -14,7 +14,8 @@ using namespace std;
 
 template<class T>
 T getRandomInt(T max){
-	static thread_local mt19937 generator;
+	static thread_local random_device rd;
+	static thread_local mt19937 generator(rd());
     uniform_int_distribution<T> distribution(0,max);
     return distribution(generator);
 }
@@ -28,15 +29,16 @@ tuple<T,T,int> getRandomEdge(T start, T n){
 }
 
 double getRandomReal(){
-	static thread_local mt19937 generator;
+	static thread_local random_device rd;
+	static thread_local mt19937 generator(rd());
 	uniform_real_distribution<double> distribution(0,1);
 	return distribution(generator);
 }
 
-csc_matrix<long> getRandomGraph(int n, int edgesPerNode,int startCol, int endCol, int colSize){
+csc_matrix<long> getRandomGraph(int n, int edgesPerNode, int cols, int colSize){
 	vector<tuple<long,long,int>> edges;
 
-	for(int i = startCol; i < endCol; i++){
+	for(int i = 0; i < cols; i++){
 		for(int j = 0; j < edgesPerNode; j++){
 			bool shouldGenerate = getRandomReal() < 1.0/colSize;
 			if(shouldGenerate){
@@ -74,55 +76,91 @@ csc_matrix<long> getRandomGraph(int n, int edgesPerNode,int startCol, int endCol
 	return csc_matrix<long>(n,edges);
 }
 
-void normalize_matrix(int n, csc_matrix<long>* matrix){
+void normalize_matrix(int n, csc_matrix<long>* matrix, MPI_Comm comm){
+	double col_sums[n];
 	for(int i = 0; i < n; i++){
 		double sum = 0.0;
 		for(int j = matrix->col_starts[i]; j < matrix->col_starts[i+1];j++){
 			sum += matrix->vals[j];
 		}
+		col_sums[i] = sum;
+		
+	}
+	double total_sums[n];
+	MPI_Reduce(&col_sums,&total_sums, n, MPI_DOUBLE, MPI_SUM, 0, comm);
+	MPI_Bcast(&total_sums,n,MPI_DOUBLE, 0, comm);
+	for(int i = 0; i < n; i++){
 		for(int j = matrix->col_starts[i]; j < matrix->col_starts[i+1]; j++){
-			matrix->vals[j] = (double)matrix->vals[j] / (double)sum;
+			matrix->vals[j] = (double)matrix->vals[j] / (double)total_sums[i];
 		}
 	}
 }
 
 template<class T>
-void printVector(vector<T> vec){
-	for (typename vector<T>::const_iterator i = vec.begin(); i != vec.end(); ++i)
-    cout << *i << ' ';
-	cout << endl;
+void printMatrix(csc_matrix<T> mat,int rank,bool abbreviated){
+	int m = mat.col_starts.size();
+	int entries = mat.vals.size();
+	string format = "==========\nRank "+to_string(rank)+ " Matrix:\n";
+	format += "Vals: [";
+	for(int i = 0; i < entries; i++ ){
+		format += to_string(mat.vals.at(i))+", ";
+	}
+	format += "]\n";
+
+	if(!abbreviated){
+		format += "Rows: [";
+		for(int i = 0; i < entries; i++ ){
+			format += to_string(mat.rows.at(i))+", ";
+		}
+		format += "]\n";
+
+		format += "ColStarts: [";
+		for(int i = 0; i < m; i++){
+			format += to_string(mat.col_starts.at(i))+", ";
+		}
+		format += "]\n";
+	}
+	format += "==========\n";
+	cout << format;
 }
 
 int main(int argc, char** argv){
-	//MPI_Init(&argc, &argv);
+	MPI_Init(&argc, &argv);
 
-	int n = 4;
+	int N = 4;
 	int edgesPerNode = 2;
 	if(argc > 2){
-		n = atoi(argv[1]);
+		N = atoi(argv[1]);
 		edgesPerNode = atoi(argv[2]);
 	}
 	
-	int rank = 0;
-	//MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	if(argc > 3 && rank ==0){
+	int wrank,wsize;
+	MPI_Comm_rank(MPI_COMM_WORLD, &wrank);
+	MPI_Comm_size(MPI_COMM_WORLD, &wsize);
+	if(argc > 3 && wrank ==0){
 		printf("Too many args! Usage: pagerank n edgesPerNode");
 	}
 
-	csc_matrix<long> matrix = getRandomGraph(n,edgesPerNode,0,n,1);
+	int col_size = sqrt(wsize);
+	if(round(col_size) * round(col_size) != wsize && wrank == 0){
+		printf("Error: must use a perfect square number of tasks.");
+		return 1;
+	}
 
-	printVector(matrix.col_starts);
-	printVector(matrix.rows);
-	printVector(matrix.vals);
+	MPI_Comm row_comm, col_comm;
+	MPI_Comm_split(MPI_COMM_WORLD,wrank/col_size,wrank,&row_comm);
+	MPI_Comm_split(MPI_COMM_WORLD,wrank%col_size,wrank,&col_comm);
 
-	printf("normalizing matrix...\n");
-	normalize_matrix(n,&matrix);
+	int n = N/col_size;
 
-	printVector(matrix.col_starts);
-	printVector(matrix.rows);
-	printVector(matrix.vals);
+	csc_matrix<long> matrix = getRandomGraph(N,edgesPerNode,n,col_size);
 
+	//printMatrix(matrix,wrank,false);
+	
+	normalize_matrix(n,&matrix,col_comm);
 
-	//MPI_Finalize();
+	printMatrix(matrix,wrank,false);
+
+	MPI_Finalize();
 	return 0;
 }
