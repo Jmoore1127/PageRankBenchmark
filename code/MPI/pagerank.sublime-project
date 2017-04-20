@@ -1,7 +1,7 @@
 {
 	"settings": {
           "sublimegdb_workingdir": "./",
-          "sublimegdb_commandline": "gdb --interpreter=mi ./pagerank"
+          "sublimegdb_commandline": "gdb --interpreter=mi ./spagerank"
     
      }	
 }
