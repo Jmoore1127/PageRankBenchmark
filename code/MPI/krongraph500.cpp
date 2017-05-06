@@ -22,12 +22,12 @@ int get_rand() {
 }
 
 template <class T>
-std::vector<std::tuple<T, T>> kronecker(int SCALE, int edges_per_vertex) {
+std::vector<std::tuple<T, T>> kronecker(int SCALE, int edges_per_vertex, int nodes) {
   // Half-hearted attempt to check that the T is big enough.
   // Doesn't try do a good job if SCALE and edges_per_vertex are close to 1ul<<64.
   assert(std::numeric_limits<T>::max() >= (1ul << SCALE)*edges_per_vertex);
   T N = T(1)<<SCALE;
-  T M = edges_per_vertex * N;
+  T M = edges_per_vertex * N / nodes;
   double A = 0.57, B = 0.19, C = 0.19;
   double ab = A+B;
   double c_norm = C/(1 - (ab));
@@ -58,7 +58,7 @@ std::vector<std::tuple<T, T>> kronecker(int SCALE, int edges_per_vertex) {
   return edges;
 }
 
-template std::vector<std::tuple<uint32_t, uint32_t>> kronecker(int SCALE, int edges_per_vertex);
+template std::vector<std::tuple<long, long>> kronecker(int SCALE, int edges_per_vertex, int nodes);
 
 static int appendint_internal(int bufoff, char *buf, uint64_t v) {
   if (v<10) {

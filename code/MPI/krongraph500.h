@@ -8,7 +8,7 @@
 #include <vector>
 
 template <class T>
-std::vector<std::tuple<T, T>> kronecker(int SCALE, int edges_per_vertex);
+std::vector<std::tuple<T, T>> kronecker(int SCALE, int edges_per_vertex, int nodes);
 // Effect: Create an edge list according to the Graph500 randomized Kronecker graph.
 //   SCALE is the log (base 2) of the total number of vertice.s
 //   edges_per_vertex is the average number of edges per node

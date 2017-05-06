@@ -1,6 +1,7 @@
 #include "csc.h"
+#include "krongraph500.h"
 
-//#include "omp.h"
+#include "omp.h"
 #include <mpi.h>
 #include <cstddef>
 #include <climits>
@@ -33,46 +34,112 @@ double getRandomReal(){
 	return distribution(generator);
 }
 
-csc_matrix<long> getRandomGraph(int n, int edgesPerNode, int cols, int colSize){
-	vector<tuple<long,long,int>> edges;
+void prefix_sum(int a[], int s[], int n) {
+    int *sums;
+    #pragma omp parallel
+    {
+        const int ithread = omp_get_thread_num();
+        const int nthreads = omp_get_num_threads();
+        #pragma omp single
+        {
+            sums = new int[nthreads+1];
+            sums[0] = 0;
+        }
+        int sum = 0;
+        #pragma omp for schedule(static) nowait 
+        for(int i=0; i<n; i++) {
+            sum += a[i];
+            s[i] = sum;
+        }
+        sums[ithread+1] = sum;
+        #pragma omp barrier
+        int offset = 0;
+        for(int i=0; i<(ithread+1); i++) {
+            offset += sums[i];
+        }
 
-	for(int i = 0; i < cols; i++){
-		for(int j = 0; j < edgesPerNode; j++){
-			bool shouldGenerate = getRandomReal() < 1.0/colSize;
-			if(shouldGenerate){
-				edges.push_back(getRandomEdge<long>(i,n));
-			}
+        #pragma omp for schedule(static) 
+        for(int i=0; i<n; i++) {
+            s[i] += offset;
+        }
+    }
+    delete[] sums;
+}
+
+csc_matrix<long>* getRandomGraph(int scale, int edgesPerNode, MPI_Comm comm){
+	int rank, size;
+	MPI_Comm_rank(comm, &rank);
+	MPI_Comm_size(comm, &size);
+
+	long n = (1ul << scale)/size;
+	vector<tuple<long,long>> edges = kronecker<long>(scale, edgesPerNode, size);
+
+	sort(edges.begin(), edges.end()); 
+
+	vector<tuple<long, long>>::iterator current_edge = edges.begin();
+	int* sendcounts = new int[size];
+	for(int i = 0; i < size; i++){
+		sendcounts[i] = 0;
+		while(current_edge != edges.end() && get<0>(*current_edge) < (i+1)*n){
+			sendcounts[i] += 2;
+			++current_edge;
 		}
 	}
 
-	sort(edges.begin(), edges.end()); //column based so sorting works, small list so parallelism doesn't help
-
-	/*for(vector<tuple<long, long, int>>::const_iterator it = edges.begin(); it!=edges.end();++it){
-		tuple<long,long,int> edge = *it;
-	tuple<long,long,int>* prev = nullptr;
-		printf("edge from %d to %d with value %d\n",get<0>(edge),get<1>(edge),get<2>(edge));
-	}*/
-
-	vector<tuple<long, long, int>>::iterator it = edges.begin();
-	tuple<long,long,int> prev = *it;
-	++it;
-	for(; it != edges.end(); ){
-		tuple<long, long, int> edge = *it;
-		int prevCol,prevRow, col,row;
-		prevCol = get<0>(prev);
-		prevRow = get<1>(prev);
-		col = get<0>(edge);
-		row = get<1>(edge);
-		if (prevCol == col && prevRow == row) {
-			get<2>(prev) = get<2>(prev) + 1;
-			it = edges.erase(it);
-		}else{
-			prev = edge;
-			++it;
-		}
-
+	int* recvcounts = new int[size];
+	MPI_Alltoall(sendcounts, 1, MPI_INT,recvcounts,1,MPI_INT,comm);
+	//convert to omp reduction
+	int sendtotal = 0;
+	int recvtotal = 0;
+	for(int i = 0; i < size; i++){
+		recvtotal += recvcounts[i];
+		sendtotal += sendcounts[i];
 	}
-	return csc_matrix<long>(n,edges);
+
+	long* data = new long[recvtotal];
+	long* sendbuffer = new long[sendtotal];
+	int pos = 0;
+	vector<tuple<long,long>>::iterator it = edges.begin();
+	while(it != edges.end()){
+		sendbuffer[pos] = get<0>(*it);
+		sendbuffer[pos+1] = get<1>(*it);
+		pos += 2;
+		++it;
+	}
+	
+	int* recvdispl = new int[size];
+	int* senddispl = new int[size];
+	prefix_sum(recvcounts,recvdispl,size);
+	prefix_sum(sendcounts,senddispl,size);
+	MPI_Alltoallv(sendbuffer,sendcounts,senddispl, MPI_INT,data,recvcounts,recvdispl, MPI_INT, comm);
+
+	vector<tuple<long,long>> local_edges;
+	local_edges.reserve(recvtotal/2);
+	for(int i = 0; i < recvtotal; i += 2){
+		local_edges.push_back(tuple<long,long>(data[i],data[i+1]));
+	}
+	// TODO make sure to clean up buffers 
+
+
+	vector<tuple<long,long, double>> matrix;
+  	matrix.reserve(edges.size());
+    auto &prev = edges[0];
+    long count = 1;
+
+    for (size_t i = 1; i < edges.size(); i++) {
+      if (prev == edges[i]) {
+        count++;
+      } else {
+        // Transpose
+        matrix.push_back(tuple<long,long,long>(get<0>(prev), get<1>(prev), count));
+        prev = edges[i];
+        count = 1;
+      }
+    }
+    matrix.push_back(tuple<long,long,long>(get<0>(prev), get<1>(prev), count));
+  	sort(matrix.begin(), matrix.end());
+	csc_matrix<long>* result = new csc_matrix<long>(n, matrix);
+	return result;
 }
 
 void normalize_matrix(int n, csc_matrix<long>* matrix, MPI_Comm comm){
@@ -163,43 +230,37 @@ double* compute_pagerank(csc_matrix<T>* transition_matrix, int n, double beta, i
 int main(int argc, char** argv){
 	MPI_Init(&argc, &argv);
 
-	int N = 4;
+	int scale = 4;
 	int edgesPerNode = 2;
 	int iterations = 50;
 	double teleport_probability = 0.85;
 	if(argc > 3){
-		N = atoi(argv[1]);
+		scale = atoi(argv[1]);
 		edgesPerNode = atoi(argv[2]);
 		iterations = atoi(argv[3]);
 	}
 	
+	MPI_Comm comm = MPI_COMM_WORLD;
 	int wrank,wsize;
-	MPI_Comm_rank(MPI_COMM_WORLD, &wrank);
-	MPI_Comm_size(MPI_COMM_WORLD, &wsize);
+	MPI_Comm_rank(comm, &wrank);
+	MPI_Comm_size(comm, &wsize);
 	if(argc > 4 && wrank ==0){
-		printf("Too many args! Usage: pagerank n edgesPerNode");
+		printf("Too many args! Usage: pagerank <scale> <edgesPerNode> <iterations>");
 	}
 
-	int col_size = sqrt(wsize);
-	if(round(col_size) * round(col_size) != wsize && wrank == 0){
-		printf("Error: must use a perfect square number of tasks.");
-		return 1;
-	}
 
-	MPI_Comm row_comm, col_comm;
-	MPI_Comm_split(MPI_COMM_WORLD,wrank/col_size,wrank,&row_comm);
-	MPI_Comm_split(MPI_COMM_WORLD,wrank%col_size,wrank,&col_comm);
 
-	int n = N/col_size;
+	unsigned long n = (1ul << scale)/wsize;
 
-	csc_matrix<long> matrix = getRandomGraph(N,edgesPerNode,n,col_size);
+	csc_matrix<long>* matrix = getRandomGraph(scale,edgesPerNode,comm);
 	
+	/*
 	normalize_matrix(n,&matrix,col_comm);
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	double start = MPI_Wtime();
 	double* r = compute_pagerank<long>(&matrix, n,teleport_probability,iterations, col_comm);
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	double time = MPI_Wtime() - start;
 
 	if(wrank == 0){
@@ -218,7 +279,7 @@ int main(int argc, char** argv){
 			cout << output;
 		}
 	}
-	
+	*/
 	MPI_Finalize();
 	return 0;
 }

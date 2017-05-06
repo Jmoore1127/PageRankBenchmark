@@ -1,7 +1,7 @@
 default: sequential-pagerank.cpp
-	g++ -g -std=c++11 sequential-pagerank.cpp -o spagerank
+	g++ -g -std=c++11 sequential-pagerank.cpp krongraph500.cpp -o spagerank
 mpi: pagerank.cpp 
-	mpicxx -fopenmp -std=c++11 pagerank.cpp -o pagerank
+	mpicxx -fopenmp -std=c++11 pagerank.cpp krongraph500.cpp -o pagerank
 test: mpi
 	mpiexec -np 4 ./pagerank 10 2 50
 bigtest: mpi

@@ -25,7 +25,7 @@ struct csc_matrix {
   csc_matrix(T NNZ, T N /* matrix side length*/ ) {
   }
 
-  csc_matrix(T N, const vector<tuple<T, T, int>> &nonzeros) {
+  csc_matrix(T N, const vector<tuple<T, T, double>> &nonzeros) {
     // nonzeros must be already sorted into column-major order.
     col_starts.reserve(N + 1);
     rows.reserve(nonzeros.size());
