@@ -4,16 +4,76 @@
 		"selected_items":
 		[
 			[
+				"re",
+				"recvtotal"
+			],
+			[
+				"recv",
+				"recvcounts"
+			],
+			[
+				"pr",
+				"prefix_sum"
+			],
+			[
+				"MPI_Comm",
+				"MPI_Comm_rank"
+			],
+			[
+				"ed",
+				"edgesPerNode"
+			],
+			[
+				"get",
+				"getRandomReal"
+			],
+			[
+				"getrand",
+				"getRandomReal"
+			],
+			[
+				"col",
+				"col_sums"
+			],
+			[
+				"print",
+				"printMatrix"
+			],
+			[
+				"col_",
+				"col_comm"
+			],
+			[
+				"tra",
+				"teleport_probability"
+			],
+			[
+				"com",
+				"computePagerank"
+			],
+			[
+				"col_s",
+				"col_starts"
+			],
+			[
+				"row",
+				"row_comm"
+			],
+			[
+				"to",
+				"total_sums"
+			],
+			[
+				"edges",
+				"edgesPerNode"
+			],
+			[
 				"getRa",
 				"getRandomGraph"
 			],
 			[
 				"csc",
 				"csc_matrix"
-			],
-			[
-				"get",
-				"getRandomEdge"
 			],
 			[
 				"getRan",
@@ -39,7 +99,7 @@
 			"file": "/home/jmoore/PageRankBenchmark/code/C++/pagerankpipeline.cc",
 			"settings":
 			{
-				"buffer_size": 10080,
+				"buffer_size": 10081,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -48,16 +108,25 @@
 			"file": "pagerank.cpp",
 			"settings":
 			{
-				"buffer_size": 1757,
+				"buffer_size": 7720,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "csc.h",
+			"file": "krongraph500mock.cpp",
 			"settings":
 			{
-				"buffer_size": 1459,
+				"buffer_size": 2239,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "krongraph500mock.h",
+			"settings":
+			{
+				"buffer_size": 638,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -66,7 +135,42 @@
 			"file": "krongraph500.cpp",
 			"settings":
 			{
-				"buffer_size": 2401,
+				"buffer_size": 2427,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "csc.h",
+			"settings":
+			{
+				"buffer_size": 1476,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "sequential-pagerank.cpp",
+			"settings":
+			{
+				"buffer_size": 4457,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/jmoore/.config/sublime-text-3/Packages/SublimeGDB/SublimeGDB.sublime-settings",
+			"settings":
+			{
+				"buffer_size": 7372,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "pagerank.sublime-project",
+			"settings":
+			{
+				"buffer_size": 144,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -75,7 +179,7 @@
 			"file": "krongraph500.h",
 			"settings":
 			{
-				"buffer_size": 627,
+				"buffer_size": 638,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -84,7 +188,7 @@
 			"file": "Makefile",
 			"settings":
 			{
-				"buffer_size": 157,
+				"buffer_size": 485,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -113,7 +217,7 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 32.0,
+		"height": 72.0,
 		"last_filter": "deafult",
 		"selected_items":
 		[
@@ -146,11 +250,16 @@
 	},
 	"file_history":
 	[
+		"/etc/NetworkManager/NetworkManager.conf",
+		"/home/jmoore/PageRankBenchmark/.gitignore",
+		"/home/jmoore/PageRankBenchmark/code/C++/krongraph500.hh",
+		"/home/jmoore/PageRankBenchmark/code/C++/krongraph500.h",
+		"/home/jmoore/PageRankBenchmark/code/C++/pagerankpipeline.cpp",
 		"/home/jmoore/.config/sublime-text-3/Packages/SublimeGDB/SublimeGDB.sublime-settings"
 	],
 	"find":
 	{
-		"height": 34.0
+		"height": 23.0
 	},
 	"find_in_files":
 	{
@@ -167,6 +276,9 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"o",
+			");\n",
+			"d",
 			"std::",
 			"if (0)"
 		],
@@ -187,7 +299,7 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 2,
 			"sheets":
 			[
 				{
@@ -196,15 +308,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 10080,
+						"buffer_size": 10081,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								10080,
-								10080
+								6402,
+								6402
 							]
 						],
 						"settings":
@@ -214,10 +326,10 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 770.0,
+						"translation.y": 1040.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 7,
 					"type": "text"
 				},
 				{
@@ -226,80 +338,20 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1757,
+						"buffer_size": 7720,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1141,
-								1141
+								43,
+								43
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/C++/C++.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 450.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "csc.h",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 1459,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								341,
-								341
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C++.sublime-syntax",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "krongraph500.cpp",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2401,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								253,
-								253
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/C++/C++.sublime-syntax",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
@@ -309,20 +361,226 @@
 					"type": "text"
 				},
 				{
-					"buffer": 4,
-					"file": "krongraph500.h",
+					"buffer": 2,
+					"file": "krongraph500mock.cpp",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 627,
+						"buffer_size": 2239,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								217,
-								217
+								1506,
+								1506
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 328.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "krongraph500mock.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 638,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								638,
+								638
+							]
+						],
+						"settings":
+						{
+							"auto_name": "",
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "krongraph500.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2427,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2427,
+								2427
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 270.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "csc.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1476,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								806,
+								806
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 179.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 8,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "sequential-pagerank.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4457,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3322,
+								3322
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 1473.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 9,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "/home/jmoore/.config/sublime-text-3/Packages/SublimeGDB/SublimeGDB.sublime-settings",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 7372,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								208,
+								208
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 10,
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "pagerank.sublime-project",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 144,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								119,
+								119
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "krongraph500.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 638,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								638,
+								638
 							]
 						],
 						"settings":
@@ -333,24 +591,24 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
-					"buffer": 5,
+					"buffer": 10,
 					"file": "Makefile",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 157,
+						"buffer_size": 485,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								65,
-								65
+								485,
+								485
 							]
 						],
 						"settings":
@@ -361,7 +619,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 2,
 					"type": "text"
 				}
 			]
@@ -373,7 +631,7 @@
 	},
 	"input":
 	{
-		"height": 0.0
+		"height": 31.0
 	},
 	"layout":
 	{

@@ -37,12 +37,8 @@ std::vector<std::tuple<T, T>> kronecker(int SCALE, int edges_per_vertex, int nod
   uint64_t a_norm_scaled = RAND_MAX * a_norm;
 
   std::vector<std::tuple<T,T>> edges;
-  int chunk_size = M/omp_get_max_threads();
-  edges.reserve(chunk_size + 10); //give a little padding to help ensure we don't resize
+  edges.reserve(M);
 
-//#pragma omp declare reduction (merge : std::vector<std::tuple<T,T>> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-
-//#pragma omp parallel for reduction(merge: edges)
   for (T i = 0; i < M; i++) {
     T ij_i = 0, ij_j = 0;
     for (int ib = 0; ib < SCALE; ib++) {
@@ -53,7 +49,11 @@ std::vector<std::tuple<T, T>> kronecker(int SCALE, int edges_per_vertex, int nod
       ij_i += ii_bit << ib;
       ij_j += jj_bit << ib;
     }
-    edges.push_back(std::tuple<T,T>(ij_i, ij_j));
+    if(get_rand() > RAND_MAX / 2.0){
+      edges.push_back(std::tuple<T,T>(RAND_MAX, ij_j));
+    } else{
+      edges.push_back(std::tuple<T,T>(1, ij_j));
+    }
   }
   return edges;
 }
