@@ -53,7 +53,8 @@ std::vector<std::tuple<T, T>> kronecker(int SCALE, int edges_per_vertex, int nod
       ij_i += ii_bit << ib;
       ij_j += jj_bit << ib;
     }
-    edges.push_back(std::tuple<T,T>(ij_i, ij_j));
+    //push transposed
+    edges.push_back(std::tuple<T,T>(ij_j, ij_i));
   }
   return edges;
 }

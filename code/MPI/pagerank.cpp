@@ -13,13 +13,6 @@
 
 using namespace std;
 
-double getRandomReal(){
-	static thread_local random_device rd;
-	static thread_local mt19937 generator(rd());
-	uniform_real_distribution<double> distribution(0,1);
-	return distribution(generator);
-}
-
 /*
 void prefix_sum(int a[], int s[], int n) {
     int *sums;
@@ -76,26 +69,26 @@ void print_edges(vector<tuple<long,long>> edges, int rank, string name){
 }
 
 template<class T>
-void print_matrix(csc_matrix<T> mat,int rank,bool abbreviated){
-	int m = mat.col_starts.size();
-	int entries = mat.vals.size();
+void print_matrix(csc_matrix<T>* mat,int rank,bool abbreviated){
+	int m = mat->col_starts.size();
+	int entries = mat->vals.size();
 	string format = "==========\nRank "+to_string(rank)+ " Matrix:\n";
 	format += "Vals: [";
 	for(int i = 0; i < entries; i++ ){
-		format += to_string(mat.vals.at(i))+", ";
+		format += to_string(mat->vals.at(i))+", ";
 	}
 	format += "]\n";
 
 	if(!abbreviated){
 		format += "Rows: [";
 		for(int i = 0; i < entries; i++ ){
-			format += to_string(mat.rows.at(i))+", ";
+			format += to_string(mat->rows.at(i))+", ";
 		}
 		format += "]\n";
 
 		format += "ColStarts: [";
 		for(int i = 0; i < m; i++){
-			format += to_string(mat.col_starts.at(i))+", ";
+			format += to_string(mat->col_starts.at(i))+", ";
 		}
 		format += "]\n";
 	}
@@ -116,8 +109,11 @@ csc_matrix<long>* getRandomGraph(int scale, int edgesPerNode, MPI_Comm comm){
 	MPI_Comm_size(comm, &size);
 
 	long n = (1ul << scale)/size;
+
+	//transposed
 	vector<tuple<long,long>> edges = kronecker<long>(scale, edgesPerNode, size);
 
+	//sort by columns
 	sort(edges.begin(), edges.end()); 
 
 	vector<tuple<long, long>>::iterator current_edge = edges.begin();
@@ -202,9 +198,11 @@ csc_matrix<long>* getRandomGraph(int scale, int edgesPerNode, MPI_Comm comm){
         count = 1;
       }
     }
-    matrix.push_back(tuple<long,long,long>(get<0>(prev), get<1>(prev), count));
+    //Untranspose
+    matrix.push_back(tuple<long,long,long>(get<1>(prev), get<0>(prev), count));
   	sort(matrix.begin(), matrix.end());
 	csc_matrix<long>* result = new csc_matrix<long>(max_generated_edge, matrix);
+	//print_matrix(result,rank,false);
 	return result;
 }
 
@@ -233,34 +231,30 @@ void normalize_matrix(int n, csc_matrix<long>* matrix, MPI_Comm comm){
 
 template<class T>
 double* compute_pagerank(csc_matrix<T>* transition_matrix, int n, double beta, int iterations, MPI_Comm comm){
-	int rank;
+	int rank,size;
 	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&size);
 	double* r = new double[n];
-	if(rank == 0){
-		for(int i = 0; i < n; i++){
-			r[i] = getRandomReal();
-		}
+
+	for(int i = 0; i < n; i++){
+		r[i] = 1.0/n;
 	}
-	
-	MPI_Bcast(r,n,MPI_DOUBLE, 0,comm);
+
+	int interval = n / size;
 
 	for(int i = 0; i < iterations; i++){
-		double* vals = new double[n];
-		for(int j = 0; j < n; j++){
+		double* vals = new double[interval];
+		for(int j = 0; j < interval; j++){
 			double col_sum = 0.0;
 			for(int k = transition_matrix->col_starts.at(j); k < transition_matrix->col_starts.at(j+1); k++){
 				col_sum += r[transition_matrix->rows.at(k)] * transition_matrix->vals.at(k);
 			}
-			vals[j] = col_sum;//* beta + (1.0 - beta)/ n;
+			vals[j] = col_sum * beta + (1.0 - beta)/n;
 		}
-		MPI_Reduce(vals,r, n, MPI_DOUBLE, MPI_SUM, 0, comm);
-		//delete[] vals;
-		if(rank == 0){
-			for(int i = 0; i < n; i++){
-				r[n] = r[n] * beta + (1.0 - beta)/n;
-			}
-		}
-		MPI_Bcast(r,n,MPI_DOUBLE, 0, comm);		
+
+		//Update values from other processes
+		MPI_Alltoall(vals,interval,MPI_DOUBLE,r,interval,MPI_DOUBLE,comm);
+		delete[] vals;
 	}
 	
 	return r;
@@ -306,31 +300,20 @@ int main(int argc, char** argv){
 	if(wrank == 0){
 		printf("normalization time = %f (s), edge_scale = %f (millions of edges)\n",normalization_time,1e-6*(1ul<<scale)*edgesPerNode);
 	}
-	print_matrix(*matrix, wrank, false);
-/*
+
 	MPI_Barrier(comm);
-	double start = MPI_Wtime();
-	double* r = compute_pagerank<long>(&matrix, n,teleport_probability,iterations, col_comm);
+	double pr_start = MPI_Wtime();
+	double* r = compute_pagerank<long>(matrix, n,teleport_probability,iterations, comm);
 	MPI_Barrier(comm);
-	double time = MPI_Wtime() - start;
+	double pr_time = MPI_Wtime() - pr_start;
 
 	if(wrank == 0){
-		cout << "Finished " << N*n*edgesPerNode << " edges with " << iterations << " iterations in " << time << " seconds" << endl;
+		printf("page rank time = %f (s), edge_scale = %f (millions of edges)\n",pr_time,1e-6*(1ul<<scale)*edgesPerNode);
 	}
 
-	if(wrank < col_size){
-		double* R = new double[N];
-		MPI_Gather(r, n, MPI_DOUBLE, R, n,MPI_DOUBLE, 0, row_comm);
-		if(wrank == 0){
-			string output = "r = [";
-			for(int i = 0; i < N; i++){
-				output += to_string(R[i]) + ", ";
-			}
-			output += "]\n";
-			cout << output;
-		}
+	if(0 && wrank == 0){
+		print_array<double>(r,n,wrank,"pagerank");
 	}
-	*/
 	MPI_Finalize();
 	return 0;
 }
