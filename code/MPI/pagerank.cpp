@@ -7,6 +7,7 @@
 #include <climits>
 #include <cfloat>
 #include <algorithm>
+#include <iterator>
 #include <vector>
 #include <tuple>
 #include <iostream>
@@ -96,12 +97,14 @@ void print_matrix(csc_matrix<T>* mat,int rank,bool abbreviated){
 	cout << format;
 }
 
+//TODO make this a scan
 void prefix_sum(int a[], int s[], int n){
 	s[0] = 0;
 	for(int i = 1; i < n; i++){
 		s[i] = s[i-1] + a[i-1];
 	}
 }
+
 
 csc_matrix<long>* getRandomGraph(int scale, int edgesPerNode, MPI_Comm comm){
 	int rank, size;
@@ -208,6 +211,7 @@ csc_matrix<long>* getRandomGraph(int scale, int edgesPerNode, MPI_Comm comm){
 
 void normalize_matrix(int n, csc_matrix<long>* matrix, MPI_Comm comm){
 	double col_sums[n];
+#pragma omp parallel for schedule(dynamic)
 	for(int i = 0; i < n; i++){
 		double sum = 0.0;
 		for(int j = matrix->col_starts[i]; j < matrix->col_starts[i+1];j++){
@@ -219,6 +223,7 @@ void normalize_matrix(int n, csc_matrix<long>* matrix, MPI_Comm comm){
 	double total_sums[n];
 	MPI_Reduce(&col_sums,&total_sums, n, MPI_DOUBLE, MPI_SUM, 0, comm);
 	MPI_Bcast(&total_sums,n,MPI_DOUBLE, 0, comm);
+#pragma omp parallel for schedule(dynamic)
 	for(int i = 0; i < n; i++){
 		if(total_sums[i]!= 0){
 			for(int j = matrix->col_starts[i]; j < matrix->col_starts[i+1]; j++){
@@ -243,18 +248,22 @@ double* compute_pagerank(csc_matrix<T>* transition_matrix, int n, double beta, i
 	int interval = n / size;
 
 	for(int i = 0; i < iterations; i++){
-		double* vals = new double[interval];
+		double* r_prime = new double[interval];
+#pragma omp parallel for schedule(dynamic)
 		for(int j = 0; j < interval; j++){
 			double col_sum = 0.0;
 			for(int k = transition_matrix->col_starts.at(j); k < transition_matrix->col_starts.at(j+1); k++){
 				col_sum += r[transition_matrix->rows.at(k)] * transition_matrix->vals.at(k);
 			}
-			vals[j] = col_sum * beta + (1.0 - beta)/n;
+			r_prime[j] = col_sum * beta + (1.0 - beta)/n;
 		}
 
 		//Update values from other processes
-		MPI_Alltoall(vals,interval,MPI_DOUBLE,r,interval,MPI_DOUBLE,comm);
-		delete[] vals;
+		double* buffer = new double[n];
+		MPI_Alltoall(r_prime,interval,MPI_DOUBLE,buffer,interval,MPI_DOUBLE,comm);
+		copy(buffer, buffer+n,r);
+		delete[] buffer;
+		delete[] r_prime;
 	}
 	
 	return r;
@@ -279,9 +288,15 @@ int main(int argc, char** argv){
 	MPI_Comm_size(comm, &wsize);
 	if(argc > 4 && wrank ==0){
 		printf("Too many args! Usage: pagerank <scale> <edgesPerNode> <iterations>");
+		return -1;
 	}
 
 	unsigned long n = (1ul << scale);
+
+	if(n % wsize != 0 && wrank == 0){
+		printf("n must be evenly-divisible by number of tasks");
+		return -1;
+	}
 
 	MPI_Barrier(comm);
 	double generation_start = MPI_Wtime();
